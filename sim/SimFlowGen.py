@@ -49,6 +49,23 @@ class SimFlowGen:
 
         return dst_ip
 
+    def build_gravity_weight(self, sim_core):
+        """Build a weight matrix.
+
+        Args:
+            sim_core (instance of SimCore)
+
+        Extra Nodes:
+            matrix[i][j] represents the weight between node i and node j.
+            n1 = # of hosts in node i.
+            n2 = # of hosts in node j.
+            d = distance between node i and node j.
+            matrix[i][j] = n1 * n2 / d ^ 2.
+
+        """
+        for nd_src in sim_core.nodes
+            for nd_dst in sim_core.nodes
+                if()
 
     def pick_dst_uniform(self, src_ip):
         """Given src_ip, pick a dst_ip using uniform random model.
