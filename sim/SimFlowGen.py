@@ -13,6 +13,8 @@ import netaddr as na
 # User-defined modules
 import SimConfig as cfg
 from SimEvent import *
+from SimCtrl import *
+from SimSwitch import *
 
 
 class SimFlowGen:
@@ -40,12 +42,12 @@ class SimFlowGen:
 
         """
         while True:
-            if (cfg.FLOWGEN_SRCDST_MODEL == 'uniform'):
-                dst_ip = self.pick_dst_uniform(src_ip)
-            else:
-                dst_ip = self.pick_dst_uniform(src_ip)  # Default to 'uniform'
-            if (not (src_ip, dst_ip) in sim_core.flows):
-                break   # Make sure src and dst host are not an existing flow
+			if (cfg.FLOWGEN_SRCDST_MODEL == 'uniform'): 
+				dst_ip = self.pick_dst_uniform(src_ip) 
+			if (cfg.FLOWGEN_SRCDST_MODEL == 'gravity'):
+				dst_ip = self.pick_dst_gravity(src_ip)  # Default to 'uniform'
+			if (not (src_ip, dst_ip) in sim_core.flows):
+				break   # Make sure src and dst host are not an existing flow
 
         return dst_ip
 
@@ -56,16 +58,65 @@ class SimFlowGen:
             sim_core (instance of SimCore)
 
         Extra Nodes:
-            matrix[i][j] represents the weight between node i and node j.
-            n1 = # of hosts in node i.
-            n2 = # of hosts in node j.
-            d = distance between node i and node j.
+            matrix[i][j] represents the weight between switch i and switch j.
+            n1 = # of hosts in switch i.
+            n2 = # of hosts in switch j.
+            d = distance between switch i and switch j.
             matrix[i][j] = n1 * n2 / d ^ 2.
 
         """
-        for nd_src in sim_core.nodes
-            for nd_dst in sim_core.nodes
-                if()
+        gravity_table = {}
+
+        for nd_src in sim_core.nodes:
+            value_list = []
+            for nd_dst in sim_core.nodes:
+                if(nd_src == nd_dst):
+					continue
+				else:
+					distance = len(build_pathset_spf(nd_src, nd_dst))
+					gravity_weight = (nd_src.n_hosts)*(nd_dst.n_hosts)/(distance*distance)
+					value_list.append((nd_dst, gravity_weight))
+			gravity_table[nd_src] = value_list
+		return gravity_table
+
+	def pick_dst_gravity(self, src_ip, sim_core):
+		"""Given src_ip, pick a dst_ip using random model based on gravity weight.
+
+		Args:
+			src_ip (netaddr.IPAddress)
+
+		Extra Notes:
+			hosts with large weight have more probability to be select as destination node.
+
+		"""
+		dst_ip = 0
+		gravity_table = build_gravity_weight(sim_core)
+		#look up the switch ip address through iterating all switches and judge whether node_ip in current switch ip range
+		designed_src_node = sim_core.nodes[0] 
+		designed_dst_node = sim_core.nodes[0]
+		for node in sim_core.nodes:
+			if(node.end_ip >= src_ip and node.base_ip <= src_ip ):
+				designed_src_node = node
+				break
+			
+		value_list = gravity_table[node_designed]
+		total_weight = 0
+		for item in value_list:
+			total_weight += item[1]
+
+# sort the current list of this src_node
+		value_list.sort(key=lambda, tup:tup[1])
+		
+		random_number = rd.randint(0, total_weight)
+		for tp in value_list:
+			if random_number <= tp[1]:
+				designed_dst_node = tp[0]
+				break
+			else:
+				random_number -= tp[1]
+		dst_ip = designed_dst_node.base_ip + rd.randint(0, designed_dst_node.n_hosts)
+		return dst_ip
+
 
     def pick_dst_uniform(self, src_ip):
         """Given src_ip, pick a dst_ip using uniform random model.
